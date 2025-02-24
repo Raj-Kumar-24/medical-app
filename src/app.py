@@ -1,10 +1,9 @@
 import streamlit as st 
 import PyPDF2
 from fpdf import FPDF
-import utils.openai_utils
-import utils.anthropic_utils
-from utils.openai_utils import generate_report_openai as generate_openai_report
-from utils.anthropic_utils import generate_report as generate_anthropic_report
+import anthropic 
+import openai 
+from openai import OpenAI
 
 # User input for OpenAI API Key
 if "openai_api_key" not in st.session_state:
@@ -12,14 +11,36 @@ if "openai_api_key" not in st.session_state:
 
 st.session_state["openai_api_key"] = st.text_input("Enter your OpenAI API Key", type="password", value=st.session_state["openai_api_key"])
 
+if st.session_state["openai_api_key"]:
+    openai_client = OpenAI(api_key=st.session_state["openai_api_key"])
+
 # User input for Anthropic API Key
 if "anthropic_api_key" not in st.session_state:
     st.session_state["anthropic_api_key"] = ""
 
 st.session_state["anthropic_api_key"] = st.text_input("Enter your Anthropic API Key", type="password", value=st.session_state["anthropic_api_key"])
 
+if st.session_state["anthropic_api_key"]:
+    anthropic_client = anthropic.Anthropic(api_key=st.session_state["anthropic_api_key"])
 # Select between OpenAI and Anthropic
 llm_choice = st.radio("Select LLM for report generation:", ("OpenAI", "Anthropic", "Both"))
+
+def generate_report_openai(prompt):
+    response = openai_client.chat.completion.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=300,
+        temperature=0.6
+    )
+    return response.choices[0].message.content.strip()
+
+def generate_report_anthropic(prompt): 
+    response = anthropic_client.messages.create(            
+            model="claude-3-5-sonnet-20241022",            
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=500   
+        )  
+    return response.content[0].text.strip()
 
 def extract_text_from_pdf(uploaded_file): 
     reader = PyPDF2.PdfReader(uploaded_file) 
@@ -68,20 +89,20 @@ if "report_text" in st.session_state and st.session_state["report_text"].strip()
         
         if llm_choice in ["OpenAI", "Both"]:
             with st.spinner("Generating Summary with OpenAI..."):
-                openai_summary = generate_openai_report(summary_prompt)
+                openai_summary = generate_report_openai(summary_prompt)
             with st.spinner("Generating Patient-Friendly Report with OpenAI..."):
-                openai_patient_friendly = generate_openai_report(patient_friendly_prompt)
+                openai_patient_friendly = generate_report_openai(patient_friendly_prompt)
             with st.spinner("Generating Recommendations with OpenAI..."):
-                openai_recommendation = generate_openai_report(recommendation_prompt)
+                openai_recommendation = generate_report_openai(recommendation_prompt)
             openai_pdf_path = save_to_pdf(openai_summary, openai_patient_friendly, openai_recommendation, "OpenAI")
 
         if llm_choice in ["Anthropic", "Both"]:
             with st.spinner("Generating Summary with Anthropic..."):
-                anthropic_summary = generate_anthropic_report(summary_prompt)
+                anthropic_summary = generate_report_anthropic(summary_prompt)
             with st.spinner("Generating Patient-Friendly Report with Anthropic..."):
-                anthropic_patient_friendly = generate_anthropic_report(patient_friendly_prompt)
+                anthropic_patient_friendly = generate_report_anthropic(patient_friendly_prompt)
             with st.spinner("Generating Recommendations with Anthropic..."):
-                anthropic_recommendation = generate_anthropic_report(recommendation_prompt)
+                anthropic_recommendation = generate_report_anthropic(recommendation_prompt)
             anthropic_pdf_path = save_to_pdf(anthropic_summary, anthropic_patient_friendly, anthropic_recommendation, "Anthropic")
 
         if llm_choice == "Both":
