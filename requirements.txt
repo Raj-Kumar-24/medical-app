@@ -3,3 +3,4 @@ openai
 anthropic
 PyPDF2
 fpdf
+googletrans
