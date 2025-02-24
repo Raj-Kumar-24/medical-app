@@ -26,7 +26,7 @@ if st.session_state["anthropic_api_key"]:
 llm_choice = st.radio("Select LLM for report generation:", ("OpenAI", "Anthropic", "Both"))
 
 def generate_report_openai(prompt):
-    response = openai_client.chat.completion.create(
+    response = openai_client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=300,
