@@ -4,7 +4,6 @@ from fpdf import FPDF
 import anthropic 
 import openai 
 from openai import OpenAI
-from googletrans import Translator
 
 # User input for OpenAI API Key
 if "openai_api_key" not in st.session_state:
@@ -48,7 +47,7 @@ def extract_text_from_pdf(uploaded_file):
     text = "".join([page.extract_text() for page in reader.pages if page.extract_text()]) 
     return text
 
-def save_to_pdf(summary, patient_friendly, recommendation, suffix, language="en"):
+def save_to_pdf(summary, patient_friendly, recommendation, suffix, language="en", summary_rating=None, patient_friendly_rating=None, recommendation_rating=None, hallucination=None, comment=None):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -68,14 +67,33 @@ def save_to_pdf(summary, patient_friendly, recommendation, suffix, language="en"
     pdf.multi_cell(0, 10, txt=recommendation)
     pdf.ln(10)
     
+    if summary_rating and patient_friendly_rating and recommendation_rating:
+        pdf.cell(200, 10, txt="Ratings:", ln=True)
+        pdf.cell(200, 10, txt=f"Summary Quality: {summary_rating}", ln=True)
+        pdf.cell(200, 10, txt=f"Patient-Friendly Report Quality: {patient_friendly_rating}", ln=True)
+        pdf.cell(200, 10, txt=f"Recommendation Quality: {recommendation_rating}", ln=True)
+        pdf.ln(5)
+    
+    if hallucination:
+        pdf.cell(200, 10, txt=f"Instances of Artificial Hallucinations: {hallucination}", ln=True)
+        if hallucination == "Yes" and comment:
+            pdf.cell(200, 10, txt="Comments:", ln=True)
+            pdf.multi_cell(0, 10, txt=comment)
+            pdf.ln(5)
+    
     file_name = f"AI_Generated_MRI_Report_{suffix}_{language}.pdf"
     pdf.output(file_name)
     return file_name
 
-def translate_text(text, dest_language):
-    translator = Translator()
-    translated = translator.translate(text, dest=dest_language)
-    return translated.text
+def translate_text_openai(text, dest_language):
+    prompt = f"Translate the following text to {dest_language}:\n\n{text}"
+    response = openai_client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=1000,
+        temperature=0.6
+    )
+    return response.choices[0].message.content.strip()
 
 st.title("MRI Report AI Assistant")
 # File uploader
@@ -121,6 +139,31 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
         st.write(st.session_state["openai_patient_friendly"])
         st.write("### OpenAI Recommendations:")
         st.write(st.session_state["openai_recommendation"])
+        
+        st.subheader("Radiologist Review for OpenAI Report")
+        st.write("Rate the quality of the AI-generated reports:")
+        openai_summary_rating = st.slider("Summary Quality (OpenAI)", 1, 5, 3, key="openai_summary_rating")
+        openai_patient_friendly_rating = st.slider("Patient-Friendly Report Quality (OpenAI)", 1, 5, 3, key="openai_patient_friendly_rating")
+        openai_recommendation_rating = st.slider("Recommendation Quality (OpenAI)", 1, 5, 3, key="openai_recommendation_rating")
+        
+        openai_hallucination = st.radio("Does the OpenAI result have instances of artificial hallucinations?", ("Yes", "No"), key="openai_hallucination")
+
+        openai_comment = ""
+        if openai_hallucination == "Yes":
+            openai_comment = st.text_area("Please provide your comments (OpenAI):")
+
+        if st.button("Submit OpenAI Ratings"):
+            openai_word_counts = {
+                "original": len(st.session_state["report_text"].split()),
+                "summary": len(st.session_state["openai_summary"].split()),
+                "patient_friendly": len(st.session_state["openai_patient_friendly"].split()),
+                "recommendation": len(st.session_state["openai_recommendation"].split())
+            }
+            openai_pdf_path = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI", "en", openai_summary_rating, openai_patient_friendly_rating, openai_recommendation_rating, openai_hallucination, openai_comment)
+            with open(openai_pdf_path, "rb") as openai_pdf_file:
+                st.download_button(label="Download OpenAI Report", data=openai_pdf_file, file_name="AI_Generated_MRI_Report_OpenAI.pdf", mime="application/pdf")
+            st.success("OpenAI Ratings submitted! Thank you for your feedback.")
+
     if "anthropic_summary" in st.session_state:
         st.write("### Anthropic Summary:")
         st.write(st.session_state["anthropic_summary"])
@@ -128,6 +171,30 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
         st.write(st.session_state["anthropic_patient_friendly"])
         st.write("### Anthropic Recommendations:")
         st.write(st.session_state["anthropic_recommendation"])
+        
+        st.subheader("Radiologist Review for Anthropic Report")
+        st.write("Rate the quality of the AI-generated reports:")
+        anthropic_summary_rating = st.slider("Summary Quality (Anthropic)", 1, 5, 3, key="anthropic_summary_rating")
+        anthropic_patient_friendly_rating = st.slider("Patient-Friendly Report Quality (Anthropic)", 1, 5, 3, key="anthropic_patient_friendly_rating")
+        anthropic_recommendation_rating = st.slider("Recommendation Quality (Anthropic)", 1, 5, 3, key="anthropic_recommendation_rating")
+        
+        anthropic_hallucination = st.radio("Does the Anthropic result have instances of artificial hallucinations?", ("Yes", "No"), key="anthropic_hallucination")
+
+        anthropic_comment = ""
+        if anthropic_hallucination == "Yes":
+            anthropic_comment = st.text_area("Please provide your comments (Anthropic):")
+
+        if st.button("Submit Anthropic Ratings"):
+            anthropic_word_counts = {
+                "original": len(st.session_state["report_text"].split()),
+                "summary": len(st.session_state["anthropic_summary"].split()),
+                "patient_friendly": len(st.session_state["anthropic_patient_friendly"].split()),
+                "recommendation": len(st.session_state["anthropic_recommendation"].split())
+            }
+            anthropic_pdf_path = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic", "en", anthropic_summary_rating, anthropic_patient_friendly_rating, anthropic_recommendation_rating, anthropic_hallucination, anthropic_comment)
+            with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
+                st.download_button(label="Download Anthropic Report", data=anthropic_pdf_file, file_name="AI_Generated_MRI_Report_Anthropic.pdf", mime="application/pdf")
+            st.success("Anthropic Ratings submitted! Thank you for your feedback.")
 
     # Language selection for translation
     language_choice = st.radio("Select language for the report:", ("English", "Spanish"))
@@ -135,14 +202,14 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
 
     if language_choice == "Spanish":
         if "openai_summary" in st.session_state:
-            st.session_state["openai_summary_translated"] = translate_text(st.session_state["openai_summary"], dest_language)
-            st.session_state["openai_patient_friendly_translated"] = translate_text(st.session_state["openai_patient_friendly"], dest_language)
-            st.session_state["openai_recommendation_translated"] = translate_text(st.session_state["openai_recommendation"], dest_language)
+            st.session_state["openai_summary_translated"] = translate_text_openai(st.session_state["openai_summary"], dest_language)
+            st.session_state["openai_patient_friendly_translated"] = translate_text_openai(st.session_state["openai_patient_friendly"], dest_language)
+            st.session_state["openai_recommendation_translated"] = translate_text_openai(st.session_state["openai_recommendation"], dest_language)
             st.session_state["openai_pdf_path_translated"] = save_to_pdf(st.session_state["openai_summary_translated"], st.session_state["openai_patient_friendly_translated"], st.session_state["openai_recommendation_translated"], "OpenAI", dest_language)
         if "anthropic_summary" in st.session_state:
-            st.session_state["anthropic_summary_translated"] = translate_text(st.session_state["anthropic_summary"], dest_language)
-            st.session_state["anthropic_patient_friendly_translated"] = translate_text(st.session_state["anthropic_patient_friendly"], dest_language)
-            st.session_state["anthropic_recommendation_translated"] = translate_text(st.session_state["anthropic_recommendation"], dest_language)
+            st.session_state["anthropic_summary_translated"] = translate_text_openai(st.session_state["anthropic_summary"], dest_language)
+            st.session_state["anthropic_patient_friendly_translated"] = translate_text_openai(st.session_state["anthropic_patient_friendly"], dest_language)
+            st.session_state["anthropic_recommendation_translated"] = translate_text_openai(st.session_state["anthropic_recommendation"], dest_language)
             st.session_state["anthropic_pdf_path_translated"] = save_to_pdf(st.session_state["anthropic_summary_translated"], st.session_state["anthropic_patient_friendly_translated"], st.session_state["anthropic_recommendation_translated"], "Anthropic", dest_language)
     else:
         st.session_state["openai_pdf_path_translated"] = st.session_state["openai_pdf_path"]
