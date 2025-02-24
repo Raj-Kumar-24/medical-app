@@ -3,7 +3,7 @@ import PyPDF2
 from fpdf import FPDF
 import utils.openai_utils
 import utils.anthropic_utils
-from utils.openai_utils import generate_report as generate_openai_report
+from utils.openai_utils import generate_report_openai as generate_openai_report
 from utils.anthropic_utils import generate_report as generate_anthropic_report
 
 # User input for OpenAI API Key
