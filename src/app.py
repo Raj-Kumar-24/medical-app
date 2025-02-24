@@ -212,12 +212,12 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
             st.session_state["openai_summary_translated"] = translate_text_openai(st.session_state["openai_summary"], dest_language)
             st.session_state["openai_patient_friendly_translated"] = translate_text_openai(st.session_state["openai_patient_friendly"], dest_language)
             st.session_state["openai_recommendation_translated"] = translate_text_openai(st.session_state["openai_recommendation"], dest_language)
-            st.session_state["openai_pdf_path_translated"] = save_to_pdf(st.session_state["openai_summary_translated"], st.session_state["openai_patient_friendly_translated"], st.session_state["openai_recommendation_translated"], "OpenAI", dest_language)
+            st.session_state["openai_pdf_path_translated"] = save_to_pdf(st.session_state["openai_summary_translated"], st.session_state["openai_patient_friendly_translated"], st.session_state["openai_recommendation_translated"], "OpenAI", dest_language, word_counts=openai_word_counts)
         if "anthropic_summary" in st.session_state:
             st.session_state["anthropic_summary_translated"] = translate_text_openai(st.session_state["anthropic_summary"], dest_language)
             st.session_state["anthropic_patient_friendly_translated"] = translate_text_openai(st.session_state["anthropic_patient_friendly"], dest_language)
             st.session_state["anthropic_recommendation_translated"] = translate_text_openai(st.session_state["anthropic_recommendation"], dest_language)
-            st.session_state["anthropic_pdf_path_translated"] = save_to_pdf(st.session_state["anthropic_summary_translated"], st.session_state["anthropic_patient_friendly_translated"], st.session_state["anthropic_recommendation_translated"], "Anthropic", dest_language)
+            st.session_state["anthropic_pdf_path_translated"] = save_to_pdf(st.session_state["anthropic_summary_translated"], st.session_state["anthropic_patient_friendly_translated"], st.session_state["anthropic_recommendation_translated"], "Anthropic", dest_language, word_counts=anthropic_word_counts)
     else:
         st.session_state["openai_pdf_path_translated"] = st.session_state["openai_pdf_path"]
         st.session_state["anthropic_pdf_path_translated"] = st.session_state["anthropic_pdf_path"]
