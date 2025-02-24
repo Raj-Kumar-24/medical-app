@@ -47,7 +47,7 @@ def extract_text_from_pdf(uploaded_file):
     text = "".join([page.extract_text() for page in reader.pages if page.extract_text()]) 
     return text
 
-def save_to_pdf(summary, patient_friendly, recommendation, suffix, language="en", summary_rating=None, patient_friendly_rating=None, recommendation_rating=None, hallucination=None, comment=None):
+def save_to_pdf(summary, patient_friendly, recommendation, suffix, language="en", summary_rating=None, patient_friendly_rating=None, recommendation_rating=None, hallucination=None, comment=None, word_counts=None):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -80,6 +80,13 @@ def save_to_pdf(summary, patient_friendly, recommendation, suffix, language="en"
             pdf.cell(200, 10, txt="Comments:", ln=True)
             pdf.multi_cell(0, 10, txt=comment)
             pdf.ln(5)
+    
+    if word_counts:
+        pdf.cell(200, 10, txt="Word Counts:", ln=True)
+        pdf.cell(200, 10, txt=f"Original Report: {word_counts['original']}", ln=True)
+        pdf.cell(200, 10, txt=f"Summary: {word_counts['summary']}", ln=True)
+        pdf.cell(200, 10, txt=f"Patient-Friendly Report: {word_counts['patient_friendly']}", ln=True)
+        pdf.cell(200, 10, txt=f"Recommendations: {word_counts['recommendation']}", ln=True)
     
     file_name = f"AI_Generated_MRI_Report_{suffix}_{language}.pdf"
     pdf.output(file_name)
@@ -159,7 +166,7 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
                 "patient_friendly": len(st.session_state["openai_patient_friendly"].split()),
                 "recommendation": len(st.session_state["openai_recommendation"].split())
             }
-            openai_pdf_path = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI", "en", openai_summary_rating, openai_patient_friendly_rating, openai_recommendation_rating, openai_hallucination, openai_comment)
+            openai_pdf_path = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI", "en", openai_summary_rating, openai_patient_friendly_rating, openai_recommendation_rating, openai_hallucination, openai_comment, openai_word_counts)
             with open(openai_pdf_path, "rb") as openai_pdf_file:
                 st.download_button(label="Download OpenAI Report", data=openai_pdf_file, file_name="AI_Generated_MRI_Report_OpenAI.pdf", mime="application/pdf")
             st.success("OpenAI Ratings submitted! Thank you for your feedback.")
@@ -191,7 +198,7 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
                 "patient_friendly": len(st.session_state["anthropic_patient_friendly"].split()),
                 "recommendation": len(st.session_state["anthropic_recommendation"].split())
             }
-            anthropic_pdf_path = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic", "en", anthropic_summary_rating, anthropic_patient_friendly_rating, anthropic_recommendation_rating, anthropic_hallucination, anthropic_comment)
+            anthropic_pdf_path = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic", "en", anthropic_summary_rating, anthropic_patient_friendly_rating, anthropic_recommendation_rating, anthropic_hallucination, anthropic_comment, anthropic_word_counts)
             with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
                 st.download_button(label="Download Anthropic Report", data=anthropic_pdf_file, file_name="AI_Generated_MRI_Report_Anthropic.pdf", mime="application/pdf")
             st.success("Anthropic Ratings submitted! Thank you for your feedback.")
