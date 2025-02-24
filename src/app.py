@@ -96,58 +96,63 @@ if "report_text" in st.session_state and st.session_state["report_text"].strip()
         
         if llm_choice in ["OpenAI", "Both"]:
             with st.spinner("Generating Summary with OpenAI..."):
-                openai_summary = generate_report_openai(summary_prompt)
+                st.session_state["openai_summary"] = generate_report_openai(summary_prompt)
             with st.spinner("Generating Patient-Friendly Report with OpenAI..."):
-                openai_patient_friendly = generate_report_openai(patient_friendly_prompt)
+                st.session_state["openai_patient_friendly"] = generate_report_openai(patient_friendly_prompt)
             with st.spinner("Generating Recommendations with OpenAI..."):
-                openai_recommendation = generate_report_openai(recommendation_prompt)
-            openai_pdf_path = save_to_pdf(openai_summary, openai_patient_friendly, openai_recommendation, "OpenAI")
+                st.session_state["openai_recommendation"] = generate_report_openai(recommendation_prompt)
+            st.session_state["openai_pdf_path"] = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI")
 
         if llm_choice in ["Anthropic", "Both"]:
             with st.spinner("Generating Summary with Anthropic..."):
-                anthropic_summary = generate_report_anthropic(summary_prompt)
+                st.session_state["anthropic_summary"] = generate_report_anthropic(summary_prompt)
             with st.spinner("Generating Patient-Friendly Report with Anthropic..."):
-                anthropic_patient_friendly = generate_report_anthropic(patient_friendly_prompt)
+                st.session_state["anthropic_patient_friendly"] = generate_report_anthropic(patient_friendly_prompt)
             with st.spinner("Generating Recommendations with Anthropic..."):
-                anthropic_recommendation = generate_report_anthropic(recommendation_prompt)
-            anthropic_pdf_path = save_to_pdf(anthropic_summary, anthropic_patient_friendly, anthropic_recommendation, "Anthropic")
+                st.session_state["anthropic_recommendation"] = generate_report_anthropic(recommendation_prompt)
+            st.session_state["anthropic_pdf_path"] = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic")
 
-        if llm_choice == "Both":
-            with open(openai_pdf_path, "rb") as openai_pdf_file:
-                st.download_button(label="Download OpenAI Report", data=openai_pdf_file, file_name="AI_Generated_MRI_Report_OpenAI.pdf", mime="application/pdf")
-            with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
-                st.download_button(label="Download Anthropic Report", data=anthropic_pdf_file, file_name="AI_Generated_MRI_Report_Anthropic.pdf", mime="application/pdf")
-        elif llm_choice == "OpenAI":
-            with open(openai_pdf_path, "rb") as openai_pdf_file:
-                st.download_button(label="Download OpenAI Report", data=openai_pdf_file, file_name="AI_Generated_MRI_Report_OpenAI.pdf", mime="application/pdf")
-        elif llm_choice == "Anthropic":
-            with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
-                st.download_button(label="Download Anthropic Report", data=anthropic_pdf_file, file_name="AI_Generated_MRI_Report_Anthropic.pdf", mime="application/pdf")
+if "openai_summary" in st.session_state or "anthropic_summary" in st.session_state:
+    st.subheader("AI-Generated Reports")
+    if "openai_summary" in st.session_state:
+        st.write("### OpenAI Summary:")
+        st.write(st.session_state["openai_summary"])
+        st.write("### OpenAI Patient-Friendly Report:")
+        st.write(st.session_state["openai_patient_friendly"])
+        st.write("### OpenAI Recommendations:")
+        st.write(st.session_state["openai_recommendation"])
+    if "anthropic_summary" in st.session_state:
+        st.write("### Anthropic Summary:")
+        st.write(st.session_state["anthropic_summary"])
+        st.write("### Anthropic Patient-Friendly Report:")
+        st.write(st.session_state["anthropic_patient_friendly"])
+        st.write("### Anthropic Recommendations:")
+        st.write(st.session_state["anthropic_recommendation"])
 
-        # Language selection for translation
-        language_choice = st.radio("Select language for the report:", ("English", "Spanish"))
-        dest_language = "es" if language_choice == "Spanish" else "en"
+    # Language selection for translation
+    language_choice = st.radio("Select language for the report:", ("English", "Spanish"))
+    dest_language = "es" if language_choice == "Spanish" else "en"
 
-        if language_choice == "Spanish":
-            if llm_choice in ["OpenAI", "Both"]:
-                openai_summary = translate_text(openai_summary, dest_language)
-                openai_patient_friendly = translate_text(openai_patient_friendly, dest_language)
-                openai_recommendation = translate_text(openai_recommendation, dest_language)
-                openai_pdf_path = save_to_pdf(openai_summary, openai_patient_friendly, openai_recommendation, "OpenAI", dest_language)
-            if llm_choice in ["Anthropic", "Both"]:
-                anthropic_summary = translate_text(anthropic_summary, dest_language)
-                anthropic_patient_friendly = translate_text(anthropic_patient_friendly, dest_language)
-                anthropic_recommendation = translate_text(anthropic_recommendation, dest_language)
-                anthropic_pdf_path = save_to_pdf(anthropic_summary, anthropic_patient_friendly, anthropic_recommendation, "Anthropic", dest_language)
+    if language_choice == "Spanish":
+        if "openai_summary" in st.session_state:
+            st.session_state["openai_summary"] = translate_text(st.session_state["openai_summary"], dest_language)
+            st.session_state["openai_patient_friendly"] = translate_text(st.session_state["openai_patient_friendly"], dest_language)
+            st.session_state["openai_recommendation"] = translate_text(st.session_state["openai_recommendation"], dest_language)
+            st.session_state["openai_pdf_path"] = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI", dest_language)
+        if "anthropic_summary" in st.session_state:
+            st.session_state["anthropic_summary"] = translate_text(st.session_state["anthropic_summary"], dest_language)
+            st.session_state["anthropic_patient_friendly"] = translate_text(st.session_state["anthropic_patient_friendly"], dest_language)
+            st.session_state["anthropic_recommendation"] = translate_text(st.session_state["anthropic_recommendation"], dest_language)
+            st.session_state["anthropic_pdf_path"] = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic", dest_language)
 
-        if llm_choice == "Both":
-            with open(openai_pdf_path, "rb") as openai_pdf_file:
-                st.download_button(label=f"Download OpenAI Report ({language_choice})", data=openai_pdf_file, file_name=f"AI_Generated_MRI_Report_OpenAI_{dest_language}.pdf", mime="application/pdf")
-            with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
-                st.download_button(label=f"Download Anthropic Report ({language_choice})", data=anthropic_pdf_file, file_name=f"AI_Generated_MRI_Report_Anthropic_{dest_language}.pdf", mime="application/pdf")
-        elif llm_choice == "OpenAI":
-            with open(openai_pdf_path, "rb") as openai_pdf_file:
-                st.download_button(label=f"Download OpenAI Report ({language_choice})", data=openai_pdf_file, file_name=f"AI_Generated_MRI_Report_OpenAI_{dest_language}.pdf", mime="application/pdf")
-        elif llm_choice == "Anthropic":
-            with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
-                st.download_button(label=f"Download Anthropic Report ({language_choice})", data=anthropic_pdf_file, file_name=f"AI_Generated_MRI_Report_Anthropic_{dest_language}.pdf", mime="application/pdf")
+    if llm_choice == "Both":
+        with open(st.session_state["openai_pdf_path"], "rb") as openai_pdf_file:
+            st.download_button(label=f"Download OpenAI Report ({language_choice})", data=openai_pdf_file, file_name=f"AI_Generated_MRI_Report_OpenAI_{dest_language}.pdf", mime="application/pdf")
+        with open(st.session_state["anthropic_pdf_path"], "rb") as anthropic_pdf_file:
+            st.download_button(label=f"Download Anthropic Report ({language_choice})", data=anthropic_pdf_file, file_name=f"AI_Generated_MRI_Report_Anthropic_{dest_language}.pdf", mime="application/pdf")
+    elif llm_choice == "OpenAI":
+        with open(st.session_state["openai_pdf_path"], "rb") as openai_pdf_file:
+            st.download_button(label=f"Download OpenAI Report ({language_choice})", data=openai_pdf_file, file_name=f"AI_Generated_MRI_Report_OpenAI_{dest_language}.pdf", mime="application/pdf")
+    elif llm_choice == "Anthropic":
+        with open(st.session_state["anthropic_pdf_path"], "rb") as anthropic_pdf_file:
+            st.download_button(label=f"Download Anthropic Report ({language_choice})", data=anthropic_pdf_file, file_name=f"AI_Generated_MRI_Report_Anthropic_{dest_language}.pdf", mime="application/pdf")
