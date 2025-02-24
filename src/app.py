@@ -4,6 +4,7 @@ from fpdf import FPDF
 import anthropic 
 import openai 
 from openai import OpenAI
+from googletrans import Translator
 
 # User input for OpenAI API Key
 if "openai_api_key" not in st.session_state:
@@ -47,12 +48,12 @@ def extract_text_from_pdf(uploaded_file):
     text = "".join([page.extract_text() for page in reader.pages if page.extract_text()]) 
     return text
 
-def save_to_pdf(summary, patient_friendly, recommendation, suffix):
+def save_to_pdf(summary, patient_friendly, recommendation, suffix, language="en"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     
-    pdf.cell(200, 10, txt="AI-Generated MRI Report", ln=True, align='C')
+    pdf.cell(200, 10, txt=f"AI-Generated MRI Report ({suffix})", ln=True, align='C')
     pdf.ln(10)
     
     pdf.cell(200, 10, txt="Summary:", ln=True)
@@ -67,8 +68,14 @@ def save_to_pdf(summary, patient_friendly, recommendation, suffix):
     pdf.multi_cell(0, 10, txt=recommendation)
     pdf.ln(10)
     
-    pdf.output(f"AI_Generated_MRI_Report_{suffix}.pdf")
-    return f"AI_Generated_MRI_Report_{suffix}.pdf"
+    file_name = f"AI_Generated_MRI_Report_{suffix}_{language}.pdf"
+    pdf.output(file_name)
+    return file_name
+
+def translate_text(text, dest_language):
+    translator = Translator()
+    translated = translator.translate(text, dest=dest_language)
+    return translated.text
 
 st.title("MRI Report AI Assistant")
 # File uploader
@@ -116,3 +123,31 @@ if "report_text" in st.session_state and st.session_state["report_text"].strip()
         elif llm_choice == "Anthropic":
             with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
                 st.download_button(label="Download Anthropic Report", data=anthropic_pdf_file, file_name="AI_Generated_MRI_Report_Anthropic.pdf", mime="application/pdf")
+
+        # Language selection for translation
+        language_choice = st.radio("Select language for the report:", ("English", "Spanish"))
+        dest_language = "es" if language_choice == "Spanish" else "en"
+
+        if language_choice == "Spanish":
+            if llm_choice in ["OpenAI", "Both"]:
+                openai_summary = translate_text(openai_summary, dest_language)
+                openai_patient_friendly = translate_text(openai_patient_friendly, dest_language)
+                openai_recommendation = translate_text(openai_recommendation, dest_language)
+                openai_pdf_path = save_to_pdf(openai_summary, openai_patient_friendly, openai_recommendation, "OpenAI", dest_language)
+            if llm_choice in ["Anthropic", "Both"]:
+                anthropic_summary = translate_text(anthropic_summary, dest_language)
+                anthropic_patient_friendly = translate_text(anthropic_patient_friendly, dest_language)
+                anthropic_recommendation = translate_text(anthropic_recommendation, dest_language)
+                anthropic_pdf_path = save_to_pdf(anthropic_summary, anthropic_patient_friendly, anthropic_recommendation, "Anthropic", dest_language)
+
+        if llm_choice == "Both":
+            with open(openai_pdf_path, "rb") as openai_pdf_file:
+                st.download_button(label=f"Download OpenAI Report ({language_choice})", data=openai_pdf_file, file_name=f"AI_Generated_MRI_Report_OpenAI_{dest_language}.pdf", mime="application/pdf")
+            with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
+                st.download_button(label=f"Download Anthropic Report ({language_choice})", data=anthropic_pdf_file, file_name=f"AI_Generated_MRI_Report_Anthropic_{dest_language}.pdf", mime="application/pdf")
+        elif llm_choice == "OpenAI":
+            with open(openai_pdf_path, "rb") as openai_pdf_file:
+                st.download_button(label=f"Download OpenAI Report ({language_choice})", data=openai_pdf_file, file_name=f"AI_Generated_MRI_Report_OpenAI_{dest_language}.pdf", mime="application/pdf")
+        elif llm_choice == "Anthropic":
+            with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
+                st.download_button(label=f"Download Anthropic Report ({language_choice})", data=anthropic_pdf_file, file_name=f"AI_Generated_MRI_Report_Anthropic_{dest_language}.pdf", mime="application/pdf")
