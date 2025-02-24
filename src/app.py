@@ -135,24 +135,27 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
 
     if language_choice == "Spanish":
         if "openai_summary" in st.session_state:
-            st.session_state["openai_summary"] = translate_text(st.session_state["openai_summary"], dest_language)
-            st.session_state["openai_patient_friendly"] = translate_text(st.session_state["openai_patient_friendly"], dest_language)
-            st.session_state["openai_recommendation"] = translate_text(st.session_state["openai_recommendation"], dest_language)
-            st.session_state["openai_pdf_path"] = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI", dest_language)
+            st.session_state["openai_summary_translated"] = translate_text(st.session_state["openai_summary"], dest_language)
+            st.session_state["openai_patient_friendly_translated"] = translate_text(st.session_state["openai_patient_friendly"], dest_language)
+            st.session_state["openai_recommendation_translated"] = translate_text(st.session_state["openai_recommendation"], dest_language)
+            st.session_state["openai_pdf_path_translated"] = save_to_pdf(st.session_state["openai_summary_translated"], st.session_state["openai_patient_friendly_translated"], st.session_state["openai_recommendation_translated"], "OpenAI", dest_language)
         if "anthropic_summary" in st.session_state:
-            st.session_state["anthropic_summary"] = translate_text(st.session_state["anthropic_summary"], dest_language)
-            st.session_state["anthropic_patient_friendly"] = translate_text(st.session_state["anthropic_patient_friendly"], dest_language)
-            st.session_state["anthropic_recommendation"] = translate_text(st.session_state["anthropic_recommendation"], dest_language)
-            st.session_state["anthropic_pdf_path"] = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic", dest_language)
+            st.session_state["anthropic_summary_translated"] = translate_text(st.session_state["anthropic_summary"], dest_language)
+            st.session_state["anthropic_patient_friendly_translated"] = translate_text(st.session_state["anthropic_patient_friendly"], dest_language)
+            st.session_state["anthropic_recommendation_translated"] = translate_text(st.session_state["anthropic_recommendation"], dest_language)
+            st.session_state["anthropic_pdf_path_translated"] = save_to_pdf(st.session_state["anthropic_summary_translated"], st.session_state["anthropic_patient_friendly_translated"], st.session_state["anthropic_recommendation_translated"], "Anthropic", dest_language)
+    else:
+        st.session_state["openai_pdf_path_translated"] = st.session_state["openai_pdf_path"]
+        st.session_state["anthropic_pdf_path_translated"] = st.session_state["anthropic_pdf_path"]
 
     if llm_choice == "Both":
-        with open(st.session_state["openai_pdf_path"], "rb") as openai_pdf_file:
+        with open(st.session_state["openai_pdf_path_translated"], "rb") as openai_pdf_file:
             st.download_button(label=f"Download OpenAI Report ({language_choice})", data=openai_pdf_file, file_name=f"AI_Generated_MRI_Report_OpenAI_{dest_language}.pdf", mime="application/pdf")
-        with open(st.session_state["anthropic_pdf_path"], "rb") as anthropic_pdf_file:
+        with open(st.session_state["anthropic_pdf_path_translated"], "rb") as anthropic_pdf_file:
             st.download_button(label=f"Download Anthropic Report ({language_choice})", data=anthropic_pdf_file, file_name=f"AI_Generated_MRI_Report_Anthropic_{dest_language}.pdf", mime="application/pdf")
     elif llm_choice == "OpenAI":
-        with open(st.session_state["openai_pdf_path"], "rb") as openai_pdf_file:
+        with open(st.session_state["openai_pdf_path_translated"], "rb") as openai_pdf_file:
             st.download_button(label=f"Download OpenAI Report ({language_choice})", data=openai_pdf_file, file_name=f"AI_Generated_MRI_Report_OpenAI_{dest_language}.pdf", mime="application/pdf")
     elif llm_choice == "Anthropic":
-        with open(st.session_state["anthropic_pdf_path"], "rb") as anthropic_pdf_file:
+        with open(st.session_state["anthropic_pdf_path_translated"], "rb") as anthropic_pdf_file:
             st.download_button(label=f"Download Anthropic Report ({language_choice})", data=anthropic_pdf_file, file_name=f"AI_Generated_MRI_Report_Anthropic_{dest_language}.pdf", mime="application/pdf")
