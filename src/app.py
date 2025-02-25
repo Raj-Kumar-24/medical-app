@@ -126,7 +126,13 @@ if "report_text" in st.session_state and st.session_state["report_text"].strip()
                 st.session_state["openai_patient_friendly"] = generate_report_openai(patient_friendly_prompt)
             with st.spinner("Generating Recommendations with OpenAI..."):
                 st.session_state["openai_recommendation"] = generate_report_openai(recommendation_prompt)
-            st.session_state["openai_pdf_path"] = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI")
+            st.session_state["openai_word_counts"] = {
+                "original": len(st.session_state["report_text"].split()),
+                "summary": len(st.session_state["openai_summary"].split()),
+                "patient_friendly": len(st.session_state["openai_patient_friendly"].split()),
+                "recommendation": len(st.session_state["openai_recommendation"].split())
+            }
+            st.session_state["openai_pdf_path"] = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI", word_counts=st.session_state["openai_word_counts"])
 
         if llm_choice in ["Anthropic", "Both"]:
             with st.spinner("Generating Summary with Anthropic..."):
@@ -135,7 +141,13 @@ if "report_text" in st.session_state and st.session_state["report_text"].strip()
                 st.session_state["anthropic_patient_friendly"] = generate_report_anthropic(patient_friendly_prompt)
             with st.spinner("Generating Recommendations with Anthropic..."):
                 st.session_state["anthropic_recommendation"] = generate_report_anthropic(recommendation_prompt)
-            st.session_state["anthropic_pdf_path"] = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic")
+            st.session_state["anthropic_word_counts"] = {
+                "original": len(st.session_state["report_text"].split()),
+                "summary": len(st.session_state["anthropic_summary"].split()),
+                "patient_friendly": len(st.session_state["anthropic_patient_friendly"].split()),
+                "recommendation": len(st.session_state["anthropic_recommendation"].split())
+            }
+            st.session_state["anthropic_pdf_path"] = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic", word_counts=st.session_state["anthropic_word_counts"])
 
 if "openai_summary" in st.session_state or "anthropic_summary" in st.session_state:
     st.subheader("AI-Generated Reports")
@@ -160,13 +172,7 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
             openai_comment = st.text_area("Please provide your comments (OpenAI):")
 
         if st.button("Submit OpenAI Ratings"):
-            openai_word_counts = {
-                "original": len(st.session_state["report_text"].split()),
-                "summary": len(st.session_state["openai_summary"].split()),
-                "patient_friendly": len(st.session_state["openai_patient_friendly"].split()),
-                "recommendation": len(st.session_state["openai_recommendation"].split())
-            }
-            openai_pdf_path = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI", "en", openai_summary_rating, openai_patient_friendly_rating, openai_recommendation_rating, openai_hallucination, openai_comment, openai_word_counts)
+            openai_pdf_path = save_to_pdf(st.session_state["openai_summary"], st.session_state["openai_patient_friendly"], st.session_state["openai_recommendation"], "OpenAI", "en", openai_summary_rating, openai_patient_friendly_rating, openai_recommendation_rating, openai_hallucination, openai_comment, st.session_state["openai_word_counts"])
             with open(openai_pdf_path, "rb") as openai_pdf_file:
                 st.download_button(label="Download OpenAI Report", data=openai_pdf_file, file_name="AI_Generated_MRI_Report_OpenAI.pdf", mime="application/pdf")
             st.success("OpenAI Ratings submitted! Thank you for your feedback.")
@@ -192,13 +198,7 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
             anthropic_comment = st.text_area("Please provide your comments (Anthropic):")
 
         if st.button("Submit Anthropic Ratings"):
-            anthropic_word_counts = {
-                "original": len(st.session_state["report_text"].split()),
-                "summary": len(st.session_state["anthropic_summary"].split()),
-                "patient_friendly": len(st.session_state["anthropic_patient_friendly"].split()),
-                "recommendation": len(st.session_state["anthropic_recommendation"].split())
-            }
-            anthropic_pdf_path = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic", "en", anthropic_summary_rating, anthropic_patient_friendly_rating, anthropic_recommendation_rating, anthropic_hallucination, anthropic_comment, anthropic_word_counts)
+            anthropic_pdf_path = save_to_pdf(st.session_state["anthropic_summary"], st.session_state["anthropic_patient_friendly"], st.session_state["anthropic_recommendation"], "Anthropic", "en", anthropic_summary_rating, anthropic_patient_friendly_rating, anthropic_recommendation_rating, anthropic_hallucination, anthropic_comment, st.session_state["anthropic_word_counts"])
             with open(anthropic_pdf_path, "rb") as anthropic_pdf_file:
                 st.download_button(label="Download Anthropic Report", data=anthropic_pdf_file, file_name="AI_Generated_MRI_Report_Anthropic.pdf", mime="application/pdf")
             st.success("Anthropic Ratings submitted! Thank you for your feedback.")
@@ -212,12 +212,12 @@ if "openai_summary" in st.session_state or "anthropic_summary" in st.session_sta
             st.session_state["openai_summary_translated"] = translate_text_openai(st.session_state["openai_summary"], dest_language)
             st.session_state["openai_patient_friendly_translated"] = translate_text_openai(st.session_state["openai_patient_friendly"], dest_language)
             st.session_state["openai_recommendation_translated"] = translate_text_openai(st.session_state["openai_recommendation"], dest_language)
-            st.session_state["openai_pdf_path_translated"] = save_to_pdf(st.session_state["openai_summary_translated"], st.session_state["openai_patient_friendly_translated"], st.session_state["openai_recommendation_translated"], "OpenAI", dest_language, word_counts=openai_word_counts)
+            st.session_state["openai_pdf_path_translated"] = save_to_pdf(st.session_state["openai_summary_translated"], st.session_state["openai_patient_friendly_translated"], st.session_state["openai_recommendation_translated"], "OpenAI", dest_language, word_counts=st.session_state["openai_word_counts"])
         if "anthropic_summary" in st.session_state:
             st.session_state["anthropic_summary_translated"] = translate_text_openai(st.session_state["anthropic_summary"], dest_language)
             st.session_state["anthropic_patient_friendly_translated"] = translate_text_openai(st.session_state["anthropic_patient_friendly"], dest_language)
             st.session_state["anthropic_recommendation_translated"] = translate_text_openai(st.session_state["anthropic_recommendation"], dest_language)
-            st.session_state["anthropic_pdf_path_translated"] = save_to_pdf(st.session_state["anthropic_summary_translated"], st.session_state["anthropic_patient_friendly_translated"], st.session_state["anthropic_recommendation_translated"], "Anthropic", dest_language, word_counts=anthropic_word_counts)
+            st.session_state["anthropic_pdf_path_translated"] = save_to_pdf(st.session_state["anthropic_summary_translated"], st.session_state["anthropic_patient_friendly_translated"], st.session_state["anthropic_recommendation_translated"], "Anthropic", dest_language, word_counts=st.session_state["anthropic_word_counts"])
     else:
         st.session_state["openai_pdf_path_translated"] = st.session_state["openai_pdf_path"]
         st.session_state["anthropic_pdf_path_translated"] = st.session_state["anthropic_pdf_path"]
